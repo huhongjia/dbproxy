@@ -1,0 +1,154 @@
+//option java_package="com.sense.dbproxy.api";
+option java_package="com.sense.dbclient.api";
+option java_outer_classname="DbProxy";
+option java_generic_services=true;
+
+
+
+//////////////////////////////////////////////////////////////////
+//
+// 协议部分
+//
+//////////////////////////////////////////////////////////////////
+enum ApiType {
+	API_TYPE_UNKNOWN = 0; // 未知
+	API_TYPE_REQUEST = 1; // 请求
+	API_TYPE_RESPONSE = 2; // 响应
+	API_TYPE_NOTIFICATION = 3; // 通知
+	API_TYPE_HEARTBEAT = 4; // 心跳
+}
+
+message ApiHeader {
+	optional uint32 seq = 1; // 包序号
+	optional uint32 type = 2; // 包类型，ApiType
+	optional uint32 version = 3; // 协议版本，0x00010000
+	optional string sid = 4; // 会话ID
+}
+
+message ApiMessage {
+	required ApiHeader header = 1;
+	extensions 1001 to max; // ApiRequest、ApiResponse、ApiNotification、ApiHeartbeat
+}
+
+message ApiRequest {
+	required string service = 1;
+	required string method = 2;
+	extensions 1001 to max; // 具体的请求参数
+}
+
+message ApiResponse {
+	required int32 code = 1;
+	optional string reason = 2;
+	extensions 1001 to max; // 具体的响应结果
+}
+
+message ApiNotification {
+	required string service = 1;
+	required string method = 2;
+	extensions 1001 to max; // 具体的请求参数
+}
+
+message ApiHeartbeat {
+}
+
+//
+// 此文件中使用的扩展序号约定从1001-1200
+//
+extend ApiMessage {
+	optional ApiRequest request = 1001;
+	optional ApiResponse response = 1002;
+	optional ApiNotification notification = 1003;
+	optional ApiHeartbeat heartbeat = 1004;
+}
+extend ApiRequest {
+  optional CreateUserRequest createUserRequest                        = 1001;
+  optional GetUserRequest    getUserRequest                           = 2002;
+  optional SetUserRequest setUserRequest                              = 1003;
+  optional DeleteUserRequest deleteUserRequest                        = 1004;
+}
+extend ApiResponse {
+  optional CreateUserResponse createUserResponse                      = 1001;
+  optional GetUserResponse getUsertResponse                           = 1002;
+  optional SetUserResponse setUserResponse                            = 1003;
+  optional DeleteUserResponse deleteUserResponse                      = 1004;
+}
+
+//////////////////////////////////////////////////////////////////
+//
+// 公共错误码
+//
+//////////////////////////////////////////////////////////////////
+enum SSResultCode {
+	RC_OK = 0;
+
+	// 网络错误，1-200
+	RC_NOT_CONNECTED = 1;
+
+	// 服务端RPC错误，201-300
+	RC_NO_SUCH_SERVICE = 201;
+	RC_NO_SUCH_METHOD = 202;
+	RC_REQUEST_INVALID = 203;
+	RC_NO_RESPONSE = 204;
+	RC_SERVER_INTERNAL_ERROR = 205;
+	RC_SERVICE_NOT_IMPLEMENT = 206;
+
+	// 客户端RPC错误，301-400
+	RC_TIMEOUT = 301;
+
+	// 业务公共错误，801-1000
+	RC_NOT_LOGIN = 801;
+	RC_PARAMETER_INVALID = 802;
+	RC_NO_SUCH_OBJECT = 803;
+
+	// 业务逻辑错误，1001-2000
+	RC_SERVICE_EXCEPTION = 1001;
+	RC_USER_EXIST = 1002;
+	RC_ACCOUNT_NOT_ACTIVATED = 1003; // 帐号未激活
+}
+
+//账号
+message User{
+	optional int32 id = 1;
+	optional string name = 2;
+	optional string password = 3;
+}
+
+//创建账号
+message CreateUserRequest {
+	required User user = 1;
+}
+
+message CreateUserResponse {
+}
+//获得账号
+message GetUserRequest {
+	required int32 id = 1;
+}
+
+message GetUserResponse {
+	required User user = 1;
+}
+
+//修改账号
+message SetUserRequest {
+	required User user = 1;
+}
+
+message SetUserResponse {
+}
+
+//删除账号
+message DeleteUserRequest {
+	required int32 id = 1;
+}
+
+message DeleteUserResponse {
+}
+
+service DBProxyService {
+	rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
+	rpc GetUser (GetUserRequest) returns (GetUserResponse);
+	rpc SetUser (SetUserRequest) returns (SetUserResponse);
+	rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
+	
+}
